@@ -12,7 +12,7 @@ try {
     $token = iam_bearer_token();
     if ($token !== null) {
         $stmt = $pdo->prepare(
-            'UPDATE iam_sessions SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP(6)) WHERE token_hash = ?'
+            'UPDATE IAM_sessions SET revoked_at = COALESCE(revoked_at, CURRENT_TIMESTAMP(6)) WHERE token_hash = ?'
         );
         $stmt->execute([hash('sha256', $token)]);
     }
