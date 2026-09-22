@@ -17,5 +17,5 @@ return [
     'cookie_name' => 'iam_light',
     'cookie_path' => '/iam',
     'cookie_secure' => true,
-    'registration_hmac_secret' => 'CHANGE_ME_TO_A_RANDOM_SECRET_OF_AT_LEAST_32_BYTES',
+    'abuse_hmac_secret' => 'CHANGE_ME_TO_A_RANDOM_SECRET_OF_AT_LEAST_32_BYTES',
 ];
