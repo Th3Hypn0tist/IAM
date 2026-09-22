@@ -90,7 +90,7 @@ function iam_abuse_count(
          WHERE action = ?
            AND %s = ?
            AND outcome NOT IN ('accepted', 'blocked')
-           AND created_at >= TIMESTAMPADD(SECOND, -?, CURRENT_TIMESTAMP(6))",
+           AND created_at >= DATE_SUB(CURRENT_TIMESTAMP(6), INTERVAL ? SECOND)",
         $column
     );
     $stmt = $pdo->prepare($sql);
