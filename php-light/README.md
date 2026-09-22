@@ -14,7 +14,7 @@ Then:
 
 1. Copy `config.example.php` to `config.php`.
 2. Configure either `db_config` or the standalone `dsn` / `user` / `password` fields.
-3. Set `registration_hmac_secret` to a random secret of at least 32 bytes.
+3. Set `abuse_hmac_secret` to a random secret of at least 32 bytes.
 4. Import `schema.sql` into the IAM database.
 5. Use HTTPS.
 6. Ensure PHP has PDO and PDO_MYSQL.
@@ -29,13 +29,13 @@ For the `aigm.fi/iam` deployment, IAM lives below the public web root while the 
 'db_config' => __DIR__ . '/../../config.php',
 ```
 
-The referenced LMTS config remains outside the public IAM directory. IAM-specific values such as session settings and `registration_hmac_secret` stay in IAM's own `config.php`.
+The referenced LMTS config remains outside the public IAM directory. IAM-specific values such as session settings and `abuse_hmac_secret` stay in IAM's own `config.php`.
 
 When `db_config` is set, its `dsn`, `user` and `password` values override the corresponding standalone example values.
 
 No Composer packages are required.
 
-Generate a registration HMAC secret locally:
+Generate an abuse-control HMAC secret locally:
 
 ```sh
 php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
@@ -87,9 +87,9 @@ Invite code not valid.
 
 ## Existing Origin
 
-An existing `users.user_id = '0'` identity is retained.
+An existing `IAM_users.user_id = '0'` identity is retained.
 
-The account password hash must be a PHP `password_hash()` value because php-light deliberately does not carry legacy credential verifiers. If the account was created with another hash format, replace only `user_accounts.password_hash`; the canonical Origin identity itself does not change.
+The account password hash must be a PHP `password_hash()` value because php-light deliberately does not carry legacy credential verifiers. If the account was created with another hash format, replace only `IAM_user_accounts.password_hash`; the canonical Origin identity itself does not change.
 
 Generate a compatible hash with PHP:
 
