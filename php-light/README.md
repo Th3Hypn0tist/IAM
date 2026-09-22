@@ -13,11 +13,25 @@ https://aigm.fi/iam
 Then:
 
 1. Copy `config.example.php` to `config.php`.
-2. Fill the MariaDB/MySQL credentials.
+2. Configure either `db_config` or the standalone `dsn` / `user` / `password` fields.
 3. Set `registration_hmac_secret` to a random secret of at least 32 bytes.
 4. Import `schema.sql` into the IAM database.
 5. Use HTTPS.
 6. Ensure PHP has PDO and PDO_MYSQL.
+
+### Shared LMTS database config
+
+php-light can consume the existing LMTS PHP database config instead of duplicating database credentials. The external file must return at least `dsn`, `user` and `password`.
+
+For the `aigm.fi/iam` deployment, IAM lives below the public web root while the existing LMTS config is two directory levels above IAM:
+
+```php
+'db_config' => __DIR__ . '/../../config.php',
+```
+
+The referenced LMTS config remains outside the public IAM directory. IAM-specific values such as session settings and `registration_hmac_secret` stay in IAM's own `config.php`.
+
+When `db_config` is set, its `dsn`, `user` and `password` values override the corresponding standalone example values.
 
 No Composer packages are required.
 
