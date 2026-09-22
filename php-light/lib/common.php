@@ -8,13 +8,36 @@ const IAM_VERSION = '1.0';
 function iam_config(): array {
     static $config = null;
     if ($config !== null) return $config;
+
     $path = dirname(__DIR__) . '/config.php';
     if (!is_file($path)) throw new RuntimeException('IAM config.php is missing');
+
     $value = require $path;
     if (!is_array($value)) throw new RuntimeException('IAM config.php must return an array');
-    foreach (['dsn', 'user', 'password'] as $key) {
-        if (!array_key_exists($key, $value)) throw new RuntimeException("IAM config missing {$key}");
+
+    $dbConfigPath = trim((string)($value['db_config'] ?? ''));
+    if ($dbConfigPath !== '') {
+        if (!is_file($dbConfigPath)) {
+            throw new RuntimeException('IAM db_config file is missing');
+        }
+        $dbConfig = require $dbConfigPath;
+        if (!is_array($dbConfig)) {
+            throw new RuntimeException('IAM db_config must return an array');
+        }
+        foreach (['dsn', 'user', 'password'] as $key) {
+            if (!array_key_exists($key, $dbConfig)) {
+                throw new RuntimeException("IAM db_config missing {$key}");
+            }
+            $value[$key] = $dbConfig[$key];
+        }
     }
+
+    foreach (['dsn', 'user', 'password'] as $key) {
+        if (!array_key_exists($key, $value)) {
+            throw new RuntimeException("IAM config missing {$key}");
+        }
+    }
+
     $config = $value;
     return $config;
 }
