@@ -72,3 +72,15 @@ CREATE TABLE IF NOT EXISTS iam_sessions (
         FOREIGN KEY (user_id) REFERENCES users(user_id)
         ON UPDATE RESTRICT ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS iam_registration_attempts (
+    attempt_id       VARCHAR(128) NOT NULL,
+    ip_hash          CHAR(64) NOT NULL,
+    invite_hash      CHAR(64) NOT NULL,
+    created_at       DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    outcome          VARCHAR(32) NOT NULL,
+    PRIMARY KEY (attempt_id),
+    KEY idx_registration_ip_time (ip_hash, created_at),
+    KEY idx_registration_invite_time (invite_hash, created_at),
+    KEY idx_registration_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
