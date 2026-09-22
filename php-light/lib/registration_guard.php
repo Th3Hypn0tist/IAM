@@ -145,6 +145,31 @@ function iam_registration_rate_limit(PDO $pdo, array $context): void {
     }
 }
 
+function iam_registration_require_usable_invite(
+    PDO $pdo,
+    array $context
+): void {
+    $stmt = $pdo->prepare(
+        "SELECT 1
+         FROM invites
+         WHERE token_hash = ?
+           AND status = 'active'
+           AND claimed_by_user_id IS NULL
+           AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP(6))
+         LIMIT 1"
+    );
+    $stmt->execute([(string)$context['invite_hash']]);
+    if ($stmt->fetchColumn() === false) {
+        iam_registration_reject(
+            $pdo,
+            $context,
+            'invalid_invite',
+            400,
+            'Invite code not valid.'
+        );
+    }
+}
+
 function iam_registration_browser_guard(PDO $pdo, array $context, array $body): void {
     $isBrowserSubmission =
         array_key_exists('website', $body)
