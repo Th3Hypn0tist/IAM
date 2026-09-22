@@ -156,7 +156,7 @@ function iam_issue_session(PDO $pdo, string $userId): array {
     $expiresSql = gmdate('Y-m-d H:i:s', $expires);
 
     $stmt = $pdo->prepare(
-        'INSERT INTO iam_sessions (session_id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)'
+        'INSERT INTO IAM_sessions (session_id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)'
     );
     $stmt->execute([$sessionId, $userId, $tokenHash, $expiresSql]);
     iam_set_cookie($token, $expires);
@@ -184,9 +184,9 @@ function iam_session_row(PDO $pdo, string $token): ?array {
             s.session_id, s.user_id, s.expires_at,
             u.username, u.tier, u.status, u.verified,
             a.account_status
-         FROM iam_sessions s
-         JOIN users u ON u.user_id = s.user_id
-         JOIN user_accounts a ON a.user_id = u.user_id
+         FROM IAM_sessions s
+         JOIN IAM_users u ON u.user_id = s.user_id
+         JOIN IAM_user_accounts a ON a.user_id = u.user_id
          WHERE s.token_hash = ?
            AND s.revoked_at IS NULL
            AND s.expires_at > CURRENT_TIMESTAMP(6)
@@ -197,7 +197,7 @@ function iam_session_row(PDO $pdo, string $token): ?array {
     if (!is_array($row)) return null;
     if ($row['status'] !== 'active' || $row['account_status'] !== 'active') return null;
 
-    $touch = $pdo->prepare('UPDATE iam_sessions SET last_seen_at = CURRENT_TIMESTAMP(6) WHERE session_id = ?');
+    $touch = $pdo->prepare('UPDATE IAM_sessions SET last_seen_at = CURRENT_TIMESTAMP(6) WHERE session_id = ?');
     $touch->execute([(string)$row['session_id']]);
     return $row;
 }
