@@ -14,11 +14,20 @@ Then:
 
 1. Copy `config.example.php` to `config.php`.
 2. Fill the MariaDB/MySQL credentials.
-3. Import `schema.sql` into the IAM database.
-4. Use HTTPS.
-5. Ensure PHP has PDO and PDO_MYSQL.
+3. Set `registration_hmac_secret` to a random secret of at least 32 bytes.
+4. Import `schema.sql` into the IAM database.
+5. Use HTTPS.
+6. Ensure PHP has PDO and PDO_MYSQL.
 
 No Composer packages are required.
+
+Generate a registration HMAC secret locally:
+
+```sh
+php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+```
+
+Do not reuse a password, invite code, bearer token or database credential as the HMAC secret.
 
 ## Endpoints
 
@@ -34,6 +43,32 @@ The browser registration page is therefore available at:
 
 ```text
 https://aigm.fi/iam/register/
+```
+
+## Registration abuse guard
+
+Registration remains invite-only. php-light additionally applies:
+
+- 5 registration attempts per IP hash / 10 minutes;
+- 20 registration attempts per IP hash / 24 hours;
+- 5 registration attempts per invite hash / 30 minutes;
+- HTTP 429 with `Retry-After` when a limit is exceeded;
+- a browser-only honeypot field;
+- a browser-only 2 second minimum form time;
+- 3-32 character ASCII usernames containing only letters, digits, `_`, `-` or `.`;
+- a reserved username list;
+- optional normalized and validated email;
+- password length 8-1024, and password must differ from username and email;
+- 7 day registration-attempt retention.
+
+The attempt table stores only an HMAC-SHA-256 IP hash, SHA-256 invite hash, timestamp and outcome. Raw invite codes and IP addresses are not written to that table.
+
+`REMOTE_ADDR` is the registration rate-limit source. If the deployment is behind a reverse proxy, configure the web server/proxy so PHP receives the intended client address in `REMOTE_ADDR`; php-light deliberately does not trust arbitrary forwarded-IP headers.
+
+For every unusable invite state, the only public invite-validity response is exactly:
+
+```text
+Invite code not valid.
 ```
 
 ## Existing Origin
