@@ -53,7 +53,7 @@ try {
 
     $inviteStmt = $pdo->prepare(
         "SELECT invite_id
-         FROM invites
+         FROM IAM_invites
          WHERE token_hash = ?
            AND status = 'active'
            AND claimed_by_user_id IS NULL
@@ -79,19 +79,19 @@ try {
     $userId = 'usr_' . bin2hex(random_bytes(16));
 
     $user = $pdo->prepare(
-        "INSERT INTO users (user_id, username, tier, status, verified)
+        "INSERT INTO IAM_users (user_id, username, tier, status, verified)
          VALUES (?, ?, 3, 'active', FALSE)"
     );
     $user->execute([$userId, $username]);
 
     $account = $pdo->prepare(
-        "INSERT INTO user_accounts (user_id, password_hash, email, account_status)
+        "INSERT INTO IAM_user_accounts (user_id, password_hash, email, account_status)
          VALUES (?, ?, ?, 'active')"
     );
     $account->execute([$userId, $passwordHash, $email]);
 
     $claim = $pdo->prepare(
-        "UPDATE invites
+        "UPDATE IAM_invites
          SET status = 'claimed',
              claimed_by_user_id = ?,
              claimed_at = CURRENT_TIMESTAMP(6)
