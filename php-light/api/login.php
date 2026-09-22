@@ -69,5 +69,6 @@ try {
     $session = iam_issue_session($pdo, (string)$row['user_id']);
     echo json_encode([...iam_base_payload($row), ...$session], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
+    error_log('[IAM login] ' . get_class($e) . ': ' . $e->getMessage());
     iam_fail(500, 'server error');
 }
