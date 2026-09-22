@@ -145,10 +145,17 @@ Requirements:
 
 - invite code must exist, be active, unclaimed and unexpired;
 - invite lookup uses SHA-256 of the raw invite code;
-- username must be unique;
+- every unusable invite state returns exactly `Invite code not valid.`;
+- username is 3-32 characters and limited to ASCII letters, digits, `_`, `-` and `.`;
+- username uniqueness is case-insensitive;
+- reserved usernames cannot be registered;
+- email is optional; when present it is normalized, validated, length-limited and unique;
+- password must not equal username or email;
 - normal registration cannot allocate Origin identity `user_id = "0"`;
 - successful registration claims the invite atomically;
 - successful registration returns an authenticated light session.
+
+The php-light reference implementation applies registration abuse controls before expensive credential hashing. These controls include IP- and invite-hash rate limits plus browser-only honeypot and minimum-form-time checks. Registration attempt storage must never contain a raw invite code.
 
 ## Current identity
 
@@ -189,5 +196,6 @@ Local
 - credential errors do not disclose account existence;
 - inactive users or accounts cannot authenticate;
 - token hashes are compared by lookup of SHA-256 digests;
+- raw invite codes are never written to registration-attempt logs;
 - server responses containing authentication state are `Cache-Control: no-store`;
 - deployment must use HTTPS outside localhost.
