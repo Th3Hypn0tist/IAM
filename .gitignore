@@ -1,1 +1,9 @@
+# Deployment/runtime secrets
 php-light/config.php
+.env
+.env.*
+!.env.example
+*.local.php
+
+# Local editor / OS noise
+.DS_Store
