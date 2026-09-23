@@ -20,10 +20,6 @@ function iam_registration_context(string $inviteCode): array {
     ];
 }
 
-function iam_registration_prune(PDO $pdo): void {
-    iam_abuse_prune($pdo);
-}
-
 function iam_registration_log(PDO $pdo, array $context, string $outcome): void {
     iam_abuse_log(
         $pdo,
