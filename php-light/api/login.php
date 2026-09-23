@@ -17,8 +17,6 @@ try {
     if (strlen($username) > 32 || strlen($password) > 1024) iam_fail(400, 'invalid credentials');
 
     $pdo = iam_pdo();
-    iam_abuse_prune($pdo);
-
     $ipHash = iam_abuse_ip_hash();
     $identifierHash = iam_abuse_identifier_hash($username);
     iam_abuse_require_not_blocked($pdo, $ipHash);
