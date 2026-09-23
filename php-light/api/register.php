@@ -22,7 +22,6 @@ try {
     $pdo = iam_pdo();
     $context = iam_registration_context($inviteCode);
 
-    iam_registration_prune($pdo);
     iam_registration_rate_limit($pdo, $context);
     iam_registration_require_usable_invite($pdo, $context);
     iam_registration_browser_guard($pdo, $context, $body);
