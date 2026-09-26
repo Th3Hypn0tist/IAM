@@ -84,17 +84,23 @@ function iam_abuse_count(
     if (!in_array($column, ['ip_hash', 'identifier_hash'], true)) {
         throw new InvalidArgumentException('invalid abuse counter column');
     }
+    if ($windowSeconds < 1) {
+        throw new InvalidArgumentException('invalid abuse counter window');
+    }
+
+    $cutoff = gmdate('Y-m-d H:i:s', time() - $windowSeconds);
+
     $sql = sprintf(
         "SELECT COUNT(*)
          FROM IAM_abuse_events
          WHERE action = ?
            AND %s = ?
            AND outcome NOT IN ('accepted', 'blocked')
-           AND created_at >= DATE_SUB(CURRENT_TIMESTAMP(6), INTERVAL ? SECOND)",
+           AND created_at >= ?",
         $column
     );
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$action, $hash, $windowSeconds]);
+    $stmt->execute([$action, $hash, $cutoff]);
     return (int)$stmt->fetchColumn();
 }
 
