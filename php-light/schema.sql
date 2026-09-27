@@ -1,5 +1,5 @@
 -- IAM php-light storage
--- Contract: iam.light 1.0
+-- Contract: iam.light 1.1
 -- Target: MariaDB / MySQL
 --
 -- IAM owns identity, credentials, invite lifecycle, session state and abuse state.
@@ -121,6 +121,35 @@ ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name),
     parent_domain_id = VALUES(parent_domain_id),
     status = VALUES(status);
+
+
+CREATE TABLE IF NOT EXISTS IAM_management_audit (
+    audit_id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    actor_user_id   VARCHAR(128) NOT NULL,
+    target_user_id  VARCHAR(128) NOT NULL,
+    domain_id       VARCHAR(64) NOT NULL,
+    action          VARCHAR(32) NOT NULL,
+    from_tier       SMALLINT UNSIGNED NULL,
+    to_tier         SMALLINT UNSIGNED NULL,
+    created_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (audit_id),
+    KEY idx_IAM_management_audit_actor (actor_user_id, created_at),
+    KEY idx_IAM_management_audit_target (target_user_id, created_at),
+    KEY idx_IAM_management_audit_domain (domain_id, created_at),
+    CONSTRAINT fk_IAM_management_audit_actor
+        FOREIGN KEY (actor_user_id) REFERENCES IAM_users(user_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT fk_IAM_management_audit_target
+        FOREIGN KEY (target_user_id) REFERENCES IAM_users(user_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT fk_IAM_management_audit_domain
+        FOREIGN KEY (domain_id) REFERENCES IAM_domains(domain_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT chk_IAM_management_audit_from
+        CHECK (from_tier IS NULL OR from_tier IN (1,2,3,1337)),
+    CONSTRAINT chk_IAM_management_audit_to
+        CHECK (to_tier IS NULL OR to_tier IN (1,2,3,1337))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS IAM_invites (
     invite_id            VARCHAR(128) NOT NULL,
