@@ -128,6 +128,9 @@ The response shape remains compatible:
 The returned `claims.tier` is the effective IAM user-management tier for the
 requested domain. Clients must not calculate inheritance themselves.
 
+A domain-aware identity response also requires active membership in the
+requested domain. Merely knowing a valid domain id does not produce a claim.
+
 ## Registration
 
 Registration is invitation-only.
@@ -273,6 +276,7 @@ Rules:
 Domain user-management is separate from application authorization.
 
 ```text
+GET  /api/domains.php
 GET  /api/users.php?domain=<domain>
 POST /api/tier.php
 POST /api/invite.php
