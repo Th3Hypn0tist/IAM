@@ -103,13 +103,6 @@ try {
         $membership->execute([$userId, $domainId]);
     }
 
-    $tier = $pdo->prepare(
-        "INSERT INTO IAM_management_tiers
-            (user_id, domain_id, management_tier, status)
-         VALUES (?, ?, 3, 'active')"
-    );
-    $tier->execute([$userId, $domainId]);
-
     $claim = $pdo->prepare(
         "UPDATE IAM_invites
          SET status = 'claimed',
