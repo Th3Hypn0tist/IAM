@@ -114,7 +114,7 @@ function iam_base_payload(array $row): array {
 
 function iam_password_hash(string $password): string {
     $length = strlen($password);
-    if ($length < 8) throw new InvalidArgumentException('password must be at least 8 characters');
+    if ($length < 15) throw new InvalidArgumentException('password must be at least 15 characters');
     if ($length > 1024) throw new InvalidArgumentException('password is too long');
     $algorithm = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT;
     $hash = password_hash($password, $algorithm);
