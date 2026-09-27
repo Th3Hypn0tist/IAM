@@ -114,6 +114,22 @@ CREATE TABLE IF NOT EXISTS IAM_invites (
         ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS IAM_registration_forms (
+    form_id        VARCHAR(128) NOT NULL,
+    invite_id      VARCHAR(128) NOT NULL,
+    token_hash     CHAR(64) NOT NULL,
+    created_at     DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    expires_at     DATETIME(6) NOT NULL,
+    consumed_at    DATETIME(6) NULL,
+    PRIMARY KEY (form_id),
+    UNIQUE KEY uq_IAM_registration_forms_token_hash (token_hash),
+    KEY idx_IAM_registration_forms_invite (invite_id, expires_at),
+    CONSTRAINT fk_IAM_registration_forms_invite
+        FOREIGN KEY (invite_id) REFERENCES IAM_invites(invite_id)
+        ON UPDATE RESTRICT ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS IAM_sessions (
     session_id       VARCHAR(128) NOT NULL,
     user_id          VARCHAR(128) NOT NULL,
