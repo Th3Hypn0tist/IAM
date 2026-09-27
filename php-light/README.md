@@ -243,3 +243,80 @@ registration flow.
 LMTS does not interpret IAM tiers as LMTS application permissions.
 
 Static report-publish authentication remains a separate later change.
+
+
+## Email change
+
+Authenticated users may request a canonical email change from `/iam`.
+
+Flow:
+
+```text
+current canonical email remains active
+→ user submits new email
+→ IAM stores pending email + one-time token hash
+→ verification mail is sent to the new address
+→ /iam?email_verify=<token>
+→ pending email becomes canonical
+```
+
+Rules:
+
+- verification token TTL is 7 days;
+- a new request invalidates previous pending requests;
+- the canonical email is unchanged until verification succeeds;
+- failed mail delivery invalidates the pending request;
+- the verification token is stored only as SHA-256.
+
+## User-management APIs
+
+Domain user-management is separate from application authorization.
+
+```text
+GET  /api/users.php?domain=<domain>
+POST /api/tier.php
+POST /api/invite.php
+```
+
+Tier requirements:
+
+- tier 2: invite;
+- tier 1: invite + list/manage domain users;
+- tier 1337: same runtime authority, but cannot be assigned through these APIs.
+
+Normal tier mutation accepts only:
+
+```text
+1
+2
+3
+```
+
+Tier `3` is represented by the absence of an explicit management-tier row.
+All tier mutations are written to `IAM_management_audit`.
+
+## Transactional mail
+
+The reference implementation uses PHP `mail()` and expects a working local
+MTA.
+
+Canonical sender:
+
+```text
+From: AIGM <noreply@aigm.fi>
+Reply-To: noreply@aigm.fi
+```
+
+Invite subject:
+
+```text
+AIGM IAM invite
+```
+
+Invite body:
+
+```text
+You have been invited to AIGM IAM!
+
+<registration URL>
+```
