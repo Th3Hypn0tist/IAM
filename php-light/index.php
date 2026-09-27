@@ -6,11 +6,29 @@ require_once __DIR__ . '/lib/common.php';
 require_once __DIR__ . '/lib/login_view.php';
 require_once __DIR__ . '/lib/identity_core.php';
 require_once __DIR__ . '/lib/registration_view.php';
+require_once __DIR__ . '/lib/email_change.php';
 
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 
 $pdo = iam_pdo();
+
+if (array_key_exists('email_verify', $_GET)) {
+    $verified = iam_verify_email_change(
+        $pdo,
+        trim((string)$_GET['email_verify'])
+    );
+
+    if (!$verified) {
+        http_response_code(400);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Verification link not valid.';
+        exit;
+    }
+
+    header('Location: /iam', true, 303);
+    exit;
+}
 
 $route = trim((string)($_GET['route'] ?? ''), '/');
 
@@ -117,6 +135,24 @@ label{display:grid;gap:.35rem}input,button,select{font:inherit;padding:.7rem}but
 <body>
 <h1><?= htmlspecialchars($username, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h1>
 
+<section>
+<h2>Account</h2>
+<form id="email-change">
+<label>
+Current email
+<input id="current-email" readonly>
+</label>
+<label>
+New email
+<input id="new-email" type="email" maxlength="320" autocomplete="email">
+</label>
+<button type="submit">Change email</button>
+<div class="status" id="email-status" role="status"></div>
+</form>
+</section>
+
+<section>
+<h2>Profile</h2>
 <form id="profile">
 <?php foreach (identitycore_fields() as $field): ?>
 <div class="field">
@@ -137,11 +173,16 @@ label{display:grid;gap:.35rem}input,button,select{font:inherit;padding:.7rem}but
 <button type="submit">Save profile</button>
 <div class="status" id="status" role="status"></div>
 </form>
+</section>
 
 <script>
 const fields = <?= json_encode(identitycore_fields(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 const form = document.getElementById('profile');
 const status = document.getElementById('status');
+const emailForm = document.getElementById('email-change');
+const emailStatus = document.getElementById('email-status');
+const currentEmail = document.getElementById('current-email');
+const newEmail = document.getElementById('new-email');
 
 async function loadProfile() {
     const response = await fetch('/iam/api/profile.php', {
@@ -154,12 +195,46 @@ async function loadProfile() {
         throw new Error(body.error || 'Profile load failed');
     }
 
+    currentEmail.value = body.email ?? '';
+
     for (const field of fields) {
         form.elements[field].value = body.profile.fields[field] ?? '';
         form.elements[field + '_visibility'].value =
             body.profile.visibility[field] ?? 'private';
     }
 }
+
+emailForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    emailStatus.textContent = '';
+
+    try {
+        const response = await fetch('/iam/api/email.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type':'application/json',
+                'Accept':'application/json'
+            },
+            body: JSON.stringify({
+                email: newEmail.value
+            })
+        });
+
+        const body = await response.json();
+
+        if (!response.ok || body.ok !== true) {
+            throw new Error(body.error || 'Email change failed');
+        }
+
+        newEmail.value = '';
+        emailStatus.textContent = 'Verification email sent.';
+    } catch (error) {
+        emailStatus.textContent = error instanceof Error
+            ? error.message
+            : 'Email change failed';
+    }
+});
 
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
