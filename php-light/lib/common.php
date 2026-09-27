@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/domain_management.php';
 
 const IAM_CONTRACT = 'iam.light';
-const IAM_VERSION = '1.0';
+const IAM_VERSION = '1.1';
 
 function iam_config(): array {
     static $config = null;
