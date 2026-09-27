@@ -206,6 +206,12 @@ function iam_session_row(PDO $pdo, string $token): ?array {
 }
 
 function iam_with_domain_claim(PDO $pdo, array $row, string $domainId): array {
+    $domainId = iam_require_domain_membership(
+        $pdo,
+        (string)$row['user_id'],
+        $domainId
+    );
+
     $effective = iam_effective_management_tier(
         $pdo,
         (string)$row['user_id'],
