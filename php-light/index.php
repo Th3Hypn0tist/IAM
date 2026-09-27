@@ -142,6 +142,23 @@ label{display:grid;gap:.35rem}input,button,select{font:inherit;padding:.7rem}but
 <div id="domains"></div>
 </section>
 
+<section id="ip-block-section" hidden>
+<h2>IP blocks</h2>
+<form id="ip-block-form">
+<label>
+IP address
+<input id="ip-block-address" autocomplete="off">
+</label>
+<label>
+Reason
+<input id="ip-block-reason" maxlength="128" autocomplete="off">
+</label>
+<button type="submit">Block IP</button>
+</form>
+<div id="ip-block-status" class="status" role="status"></div>
+<div id="ip-block-list"></div>
+</section>
+
 <section>
 <h2>Account</h2>
 <form id="email-change">
@@ -192,6 +209,12 @@ const currentEmail = document.getElementById('current-email');
 const newEmail = document.getElementById('new-email');
 const logoutButton = document.getElementById('logout');
 const domainsRoot = document.getElementById('domains');
+const ipBlockSection = document.getElementById('ip-block-section');
+const ipBlockForm = document.getElementById('ip-block-form');
+const ipBlockAddress = document.getElementById('ip-block-address');
+const ipBlockReason = document.getElementById('ip-block-reason');
+const ipBlockStatus = document.getElementById('ip-block-status');
+const ipBlockList = document.getElementById('ip-block-list');
 
 async function loadDomains() {
     const response = await fetch('/iam/api/domains.php', {
@@ -211,6 +234,63 @@ async function loadDomains() {
         row.textContent =
             domain.id + ' — tier ' + domain.effective_tier;
         domainsRoot.appendChild(row);
+    }
+
+    if (body.iam_security?.ip_blocks_manage === true) {
+        ipBlockSection.hidden = false;
+        await loadIpBlocks();
+    }
+}
+
+async function loadIpBlocks() {
+    const response = await fetch('/iam/api/ip-blocks.php', {
+        credentials: 'same-origin',
+        headers: {'Accept':'application/json'}
+    });
+    const body = await response.json();
+
+    if (!response.ok || body.ok !== true) {
+        throw new Error(body.error || 'IP block load failed');
+    }
+
+    ipBlockList.replaceChildren();
+
+    for (const block of body.blocks) {
+        const row = document.createElement('div');
+        const text = document.createElement('span');
+        text.textContent =
+            block.ip_hash + ' — ' +
+            block.reason + ' — ' +
+            block.source;
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Unblock';
+        button.addEventListener('click', async () => {
+            const response = await fetch('/iam/api/ip-blocks.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type':'application/json',
+                    'Accept':'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'unblock',
+                    ip_hash: block.ip_hash
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok || result.ok !== true) {
+                throw new Error(result.error || 'Unblock failed');
+            }
+
+            await loadIpBlocks();
+        });
+
+        row.append(text, ' ', button);
+        ipBlockList.appendChild(row);
     }
 }
 
@@ -233,6 +313,41 @@ async function loadProfile() {
             body.profile.visibility[field] ?? 'private';
     }
 }
+
+ipBlockForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    ipBlockStatus.textContent = '';
+
+    try {
+        const response = await fetch('/iam/api/ip-blocks.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type':'application/json',
+                'Accept':'application/json'
+            },
+            body: JSON.stringify({
+                action: 'block',
+                ip: ipBlockAddress.value,
+                reason: ipBlockReason.value
+            })
+        });
+
+        const body = await response.json();
+
+        if (!response.ok || body.ok !== true) {
+            throw new Error(body.error || 'IP block failed');
+        }
+
+        ipBlockAddress.value = '';
+        ipBlockReason.value = '';
+        await loadIpBlocks();
+    } catch (error) {
+        ipBlockStatus.textContent = error instanceof Error
+            ? error.message
+            : 'IP block failed';
+    }
+});
 
 logoutButton.addEventListener('click', async () => {
     await fetch('/iam/api/logout.php', {
