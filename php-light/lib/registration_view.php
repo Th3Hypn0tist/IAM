@@ -91,13 +91,27 @@ button{cursor:pointer}.iam-login-status{min-height:1.5rem}
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IAM registration</title>
 <style>
-body{font-family:system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1rem;background:#111;color:#eee}
-form{display:grid;gap:1rem}label{display:grid;gap:.35rem}input,button{font:inherit;padding:.7rem}
-button{cursor:pointer}.status{min-height:1.5rem}small{color:#aaa}.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+html,body{min-height:100%}
+body{margin:0;background:#030202;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{width:min(92vw,420px);margin:0 auto;padding:5vh 0 8vh}
+.logo{display:block;max-width:min(70vw,420px);height:auto;margin:0 auto}
+.iam-title{text-align:center;margin:0;font-size:clamp(3.5rem,10vw,5rem);font-weight:600;letter-spacing:.08em;color:#fff;position:relative;top:-.65em}
+h2{margin:-2.2rem 0 1.5rem;text-align:center;font-weight:500}
+form{display:grid;gap:1rem}
+label{display:grid;gap:.4rem;font-size:.9rem;color:#bbb}
+input{box-sizing:border-box;width:100%;padding:.8rem .9rem;border:1px solid #333;border-radius:.35rem;background:#111;color:#fff;font:inherit}
+input:focus{outline:1px solid #fff;outline-offset:1px}
+button{padding:.8rem .9rem;border:1px solid #444;border-radius:.35rem;background:#fff;color:#030202;font:inherit;font-weight:600;cursor:pointer}
+.status{min-height:1.5rem;color:#bbb;text-align:center}
+small{color:#888}
+.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
 </style>
 </head>
 <body>
-<h1>Register</h1>
+<main>
+<img class="logo" src="/images/AIGM-LOGO.png" alt="AIGM">
+<h1 class="iam-title">IAM</h1>
+<h2>Register</h2>
 
 <form id="register">
 <label>
@@ -220,6 +234,7 @@ form.addEventListener('submit', async (event) => {
     }
 });
 </script>
+</main>
 </body>
 </html>
 <?php
