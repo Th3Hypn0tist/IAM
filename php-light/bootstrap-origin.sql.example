@@ -1,0 +1,56 @@
+-- IAM php-light initial bootstrap
+-- Run only on a fresh canonical database after schema.sql.
+--
+-- Replace both CHANGE_ME values before execution.
+-- Tier 1337 is intentionally created only by direct SQL.
+
+SET @origin_email = 'CHANGE_ME@example.com';
+SET @origin_password_hash = 'CHANGE_ME_PASSWORD_HASH';
+
+START TRANSACTION;
+
+INSERT INTO IAM_users (
+    user_id,
+    username,
+    status,
+    verified
+) VALUES (
+    '0',
+    'origin',
+    'active',
+    TRUE
+);
+
+INSERT INTO IAM_user_accounts (
+    user_id,
+    password_hash,
+    email,
+    account_status
+) VALUES (
+    '0',
+    @origin_password_hash,
+    @origin_email,
+    'active'
+);
+
+INSERT INTO IAM_domain_memberships (
+    user_id,
+    domain_id,
+    status
+) VALUES
+    ('0', 'iam', 'active'),
+    ('0', 'lmts', 'active');
+
+INSERT INTO IAM_management_tiers (
+    user_id,
+    domain_id,
+    management_tier,
+    status
+) VALUES (
+    '0',
+    'iam',
+    1337,
+    'active'
+);
+
+COMMIT;
