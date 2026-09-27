@@ -82,9 +82,12 @@ CREATE TABLE IF NOT EXISTS IAM_management_tiers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO IAM_domains (domain_id, display_name, parent_domain_id, status)
-VALUES ('iam', 'IAM', NULL, 'active')
+VALUES
+    ('iam', 'IAM', NULL, 'active'),
+    ('lmts', 'LMTS', 'iam', 'active')
 ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name),
+    parent_domain_id = VALUES(parent_domain_id),
     status = VALUES(status);
 
 CREATE TABLE IF NOT EXISTS IAM_invites (
