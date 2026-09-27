@@ -33,18 +33,6 @@ function iam_create_invite(
         iam_fail(403, 'Access denied.');
     }
 
-    $existingAccount = $pdo->prepare(
-        "SELECT 1
-         FROM IAM_user_accounts
-         WHERE email = ?
-         LIMIT 1"
-    );
-    $existingAccount->execute([$targetEmail]);
-
-    if ($existingAccount->fetchColumn() !== false) {
-        iam_fail(409, 'User already exists.');
-    }
-
     $pdo->beginTransaction();
 
     try {
@@ -124,4 +112,97 @@ function iam_invite_registration_url(string $token): string {
     );
 
     return $base . '/register?token=' . rawurlencode($token);
+}
+
+
+function iam_invite_existing_user_by_email(
+    PDO $pdo,
+    string $targetEmail
+): ?array {
+    $stmt = $pdo->prepare(
+        "SELECT
+            u.user_id,
+            u.username,
+            u.status,
+            a.account_status
+         FROM IAM_user_accounts a
+         INNER JOIN IAM_users u
+            ON u.user_id = a.user_id
+         WHERE a.email = ?
+         LIMIT 1"
+    );
+    $stmt->execute([iam_normalize_email($targetEmail)]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!is_array($row)) {
+        return null;
+    }
+
+    if (
+        (string)$row['status'] !== 'active'
+        || (string)$row['account_status'] !== 'active'
+    ) {
+        return null;
+    }
+
+    return $row;
+}
+
+function iam_accept_invite_for_existing_user(
+    PDO $pdo,
+    string $inviteId,
+    string $userId,
+    string $domainId
+): void {
+    $domainId = iam_require_domain($pdo, $domainId);
+
+    $pdo->beginTransaction();
+
+    try {
+        $lock = $pdo->prepare(
+            "SELECT invite_id
+             FROM IAM_invites
+             WHERE invite_id = ?
+               AND status = 'active'
+               AND claimed_by_user_id IS NULL
+               AND expires_at > CURRENT_TIMESTAMP(6)
+             FOR UPDATE"
+        );
+        $lock->execute([$inviteId]);
+
+        if ($lock->fetchColumn() === false) {
+            throw new RuntimeException('invite is no longer active');
+        }
+
+        $membership = $pdo->prepare(
+            "INSERT INTO IAM_domain_memberships
+                (user_id, domain_id, status)
+             VALUES (?, ?, 'active')
+             ON DUPLICATE KEY UPDATE
+                status = VALUES(status)"
+        );
+        $membership->execute([$userId, $domainId]);
+
+        $claim = $pdo->prepare(
+            "UPDATE IAM_invites
+             SET status = 'claimed',
+                 claimed_by_user_id = ?,
+                 claimed_at = CURRENT_TIMESTAMP(6)
+             WHERE invite_id = ?
+               AND status = 'active'
+               AND claimed_by_user_id IS NULL"
+        );
+        $claim->execute([$userId, $inviteId]);
+
+        if ($claim->rowCount() !== 1) {
+            throw new RuntimeException('invite claim failed');
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
