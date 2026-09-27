@@ -135,6 +135,13 @@ label{display:grid;gap:.35rem}input,button,select{font:inherit;padding:.7rem}but
 <body>
 <h1><?= htmlspecialchars($username, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h1>
 
+<button type="button" id="logout">Logout</button>
+
+<section>
+<h2>Domains</h2>
+<div id="domains"></div>
+</section>
+
 <section>
 <h2>Account</h2>
 <form id="email-change">
@@ -183,6 +190,29 @@ const emailForm = document.getElementById('email-change');
 const emailStatus = document.getElementById('email-status');
 const currentEmail = document.getElementById('current-email');
 const newEmail = document.getElementById('new-email');
+const logoutButton = document.getElementById('logout');
+const domainsRoot = document.getElementById('domains');
+
+async function loadDomains() {
+    const response = await fetch('/iam/api/domains.php', {
+        credentials: 'same-origin',
+        headers: {'Accept':'application/json'}
+    });
+    const body = await response.json();
+
+    if (!response.ok || body.ok !== true) {
+        throw new Error(body.error || 'Domain load failed');
+    }
+
+    domainsRoot.replaceChildren();
+
+    for (const domain of body.domains) {
+        const row = document.createElement('div');
+        row.textContent =
+            domain.id + ' — tier ' + domain.effective_tier;
+        domainsRoot.appendChild(row);
+    }
+}
 
 async function loadProfile() {
     const response = await fetch('/iam/api/profile.php', {
@@ -203,6 +233,16 @@ async function loadProfile() {
             body.profile.visibility[field] ?? 'private';
     }
 }
+
+logoutButton.addEventListener('click', async () => {
+    await fetch('/iam/api/logout.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {'Accept':'application/json'}
+    });
+
+    window.location.replace('/iam');
+});
 
 emailForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -271,6 +311,12 @@ form.addEventListener('submit', async (event) => {
             ? error.message
             : 'Profile save failed';
     }
+});
+
+loadDomains().catch((error) => {
+    domainsRoot.textContent = error instanceof Error
+        ? error.message
+        : 'Domain load failed';
 });
 
 loadProfile().catch((error) => {
