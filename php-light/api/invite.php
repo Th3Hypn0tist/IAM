@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/lib/common.php';
 require_once dirname(__DIR__) . '/lib/invites.php';
+require_once dirname(__DIR__) . '/lib/mail.php';
 
 iam_headers();
 iam_require_method('POST');
@@ -27,9 +28,15 @@ try {
         $email
     );
 
-    $registrationUrl = iam_invite_registration_url(
-        (string)$invite['token']
-    );
+    try {
+        iam_send_invite_email($invite);
+    } catch (Throwable $deliveryError) {
+        iam_mark_invite_delivery_failed(
+            $pdo,
+            (string)$invite['invite_id']
+        );
+        throw $deliveryError;
+    }
 
     http_response_code(201);
     echo json_encode(
@@ -40,8 +47,7 @@ try {
                 'domain' => $invite['domain_id'],
                 'email' => $invite['target_email'],
                 'expires_at' => $invite['expires_at'],
-                'registration_url' => $registrationUrl,
-                'delivery' => 'not_configured',
+                'delivery' => 'sent',
             ],
         ],
         JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
