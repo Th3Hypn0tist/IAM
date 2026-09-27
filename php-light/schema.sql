@@ -194,6 +194,25 @@ CREATE TABLE IF NOT EXISTS IAM_registration_forms (
         ON UPDATE RESTRICT ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS IAM_email_change_requests (
+    request_id       VARCHAR(128) NOT NULL,
+    user_id          VARCHAR(128) NOT NULL,
+    pending_email    VARCHAR(320) NOT NULL,
+    token_hash       CHAR(64) NOT NULL,
+    created_at       DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    expires_at       DATETIME(6) NOT NULL,
+    consumed_at      DATETIME(6) NULL,
+    invalidated_at   DATETIME(6) NULL,
+    PRIMARY KEY (request_id),
+    UNIQUE KEY uq_IAM_email_change_token_hash (token_hash),
+    KEY idx_IAM_email_change_user (user_id, created_at),
+    KEY idx_IAM_email_change_pending (pending_email),
+    CONSTRAINT fk_IAM_email_change_user
+        FOREIGN KEY (user_id) REFERENCES IAM_users(user_id)
+        ON UPDATE RESTRICT ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS IAM_sessions (
     session_id       VARCHAR(128) NOT NULL,
     user_id          VARCHAR(128) NOT NULL,
