@@ -21,3 +21,9 @@ https://aigm.fi/iam
 ```
 
 LMTS is the first reference client.
+
+
+## Deployment
+
+The current php-light deployment procedure is documented in
+[`DEPLOY.md`](DEPLOY.md).
