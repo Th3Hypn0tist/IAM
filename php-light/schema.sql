@@ -8,14 +8,46 @@
 CREATE TABLE IF NOT EXISTS IAM_users (
     user_id          VARCHAR(128) NOT NULL,
     username         VARCHAR(128) NOT NULL,
-    display_name     VARCHAR(255) NULL,
-    organization     VARCHAR(255) NULL,
     status           VARCHAR(32) NOT NULL DEFAULT 'active',
     verified         BOOLEAN NOT NULL DEFAULT FALSE,
     created_at       DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at       DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (user_id),
     UNIQUE KEY uq_IAM_users_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS IdentityCore_profiles (
+    user_id       VARCHAR(128) NOT NULL,
+    display_name  VARCHAR(255) NULL,
+    organization  VARCHAR(255) NULL,
+    phone         VARCHAR(64) NULL,
+    country       VARCHAR(128) NULL,
+    timezone      VARCHAR(128) NULL,
+    language      VARCHAR(32) NULL,
+    website       VARCHAR(512) NULL,
+    created_at    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (user_id),
+    CONSTRAINT fk_IdentityCore_profiles_user
+        FOREIGN KEY (user_id) REFERENCES IAM_users(user_id)
+        ON UPDATE RESTRICT ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS IdentityCore_field_visibility (
+    user_id       VARCHAR(128) NOT NULL,
+    field_name    VARCHAR(64) NOT NULL,
+    visibility    VARCHAR(16) NOT NULL DEFAULT 'private',
+    updated_at    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (user_id, field_name),
+    KEY idx_IdentityCore_visibility_public (visibility, field_name),
+    CONSTRAINT fk_IdentityCore_visibility_user
+        FOREIGN KEY (user_id) REFERENCES IAM_users(user_id)
+        ON UPDATE RESTRICT ON DELETE CASCADE,
+    CONSTRAINT chk_IdentityCore_visibility
+        CHECK (visibility IN ('private','public'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS IAM_user_accounts (
