@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/lib/common.php';
 require_once dirname(__DIR__) . '/lib/domains.php';
+require_once dirname(__DIR__) . '/lib/ip_blocks.php';
 
 iam_headers();
 iam_require_method('GET');
@@ -19,6 +20,12 @@ try {
                 $pdo,
                 (string)$session['user_id']
             ),
+            'iam_security' => [
+                'ip_blocks_manage' => iam_can_manage_ip_blocks(
+                    $pdo,
+                    (string)$session['user_id']
+                ),
+            ],
         ],
         JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
     );
