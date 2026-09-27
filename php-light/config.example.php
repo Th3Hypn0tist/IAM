@@ -18,4 +18,5 @@ return [
     'cookie_path' => '/iam',
     'cookie_secure' => true,
     'abuse_hmac_secret' => 'CHANGE_ME_TO_A_RANDOM_SECRET_OF_AT_LEAST_32_BYTES',
+    'invalid_invite_block_seconds' => 3600,
 ];
