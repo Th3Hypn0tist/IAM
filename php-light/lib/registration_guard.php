@@ -6,7 +6,7 @@ require_once __DIR__ . '/abuse.php';
 
 const IAM_REGISTRATION_RESERVED_USERNAMES = [
     'origin','admin','administrator','root','system','iam','aigm',
-    'support','security','api','null','anonymous','local',
+    'support','security','api','register','null','anonymous','local',
 ];
 
 const IAM_REGISTRATION_FORM_TTL_SECONDS = 43200;
@@ -54,9 +54,10 @@ function iam_registration_reject_invalid_invite(PDO $pdo, array $context): never
     iam_registration_log($pdo, $context, 'invalid_invite');
 
     $ipHash = (string)$context['ip_hash'];
-    $invalidCount = iam_abuse_count(
+    $invalidCount = iam_abuse_count_outcome(
         $pdo,
         'register',
+        'invalid_invite',
         'ip_hash',
         $ipHash,
         86400
@@ -190,7 +191,12 @@ function iam_registration_require_form_state(
             form_id,
             created_at,
             expires_at,
-            consumed_at
+            consumed_at,
+            TIMESTAMPDIFF(
+                SECOND,
+                created_at,
+                CURRENT_TIMESTAMP(6)
+            ) AS age_seconds
          FROM IAM_registration_forms
          WHERE token_hash = ?
            AND invite_id = ?
@@ -208,10 +214,9 @@ function iam_registration_require_form_state(
         iam_fail(400, 'Registration form expired. Open the invitation link again.');
     }
 
-    $createdAt = strtotime((string)$form['created_at'] . ' UTC');
     if (
-        $createdAt === false
-        || time() - $createdAt < IAM_REGISTRATION_MIN_FORM_AGE_SECONDS
+        (int)$form['age_seconds']
+            < IAM_REGISTRATION_MIN_FORM_AGE_SECONDS
     ) {
         iam_fail(400, 'Registration failed.');
     }
