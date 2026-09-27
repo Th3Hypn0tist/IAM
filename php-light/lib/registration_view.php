@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/registration_guard.php';
+require_once __DIR__ . '/invites.php';
+require_once __DIR__ . '/login_view.php';
 
 function iam_render_registration_view(
     PDO $pdo,
@@ -17,12 +19,68 @@ function iam_render_registration_view(
         $context
     );
 
+    $email = (string)$invite['target_email'];
+
+    $existingUser = iam_invite_existing_user_by_email(
+        $pdo,
+        $email
+    );
+
+    if ($existingUser !== null) {
+        $session = null;
+        $sessionToken = iam_bearer_token();
+
+        if ($sessionToken !== null) {
+            $session = iam_session_row($pdo, $sessionToken);
+        }
+
+        if ($session === null) {
+            header('Content-Type: text/html; charset=utf-8');
+?>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accept invitation</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1rem;background:#111;color:#eee}
+form{display:grid;gap:1rem}label{display:grid;gap:.35rem}input,button{font:inherit;padding:.7rem}
+button{cursor:pointer}.iam-login-status{min-height:1.5rem}
+</style>
+</head>
+<body>
+<h1>Accept invitation</h1>
+<p>Sign in to continue.</p>
+<?php iam_render_login_view((string)$invite['domain_id']); ?>
+</body>
+</html>
+<?php
+            return;
+        }
+
+        if ((string)$session['user_id'] !== (string)$existingUser['user_id']) {
+            http_response_code(403);
+            header('Content-Type: text/plain; charset=utf-8');
+            echo 'Invitation belongs to another account.';
+            return;
+        }
+
+        iam_accept_invite_for_existing_user(
+            $pdo,
+            (string)$invite['invite_id'],
+            (string)$existingUser['user_id'],
+            (string)$invite['domain_id']
+        );
+
+        header('Location: /iam', true, 303);
+        return;
+    }
+
     $formToken = iam_registration_create_form_state(
         $pdo,
         $invite
     );
-
-    $email = (string)$invite['target_email'];
 
     header('Content-Type: text/html; charset=utf-8');
 ?>
