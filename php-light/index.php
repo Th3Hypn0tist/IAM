@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/lib/common.php';
 require_once __DIR__ . '/lib/login_view.php';
 require_once __DIR__ . '/lib/identity_core.php';
+require_once __DIR__ . '/lib/registration_view.php';
 
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -12,6 +13,18 @@ header('X-Content-Type-Options: nosniff');
 $pdo = iam_pdo();
 
 $route = trim((string)($_GET['route'] ?? ''), '/');
+
+if ($route === 'register' && array_key_exists('token', $_GET)) {
+    $inviteToken = trim((string)$_GET['token']);
+
+    if ($inviteToken === '') {
+        $context = iam_registration_context('');
+        iam_registration_reject_invalid_invite($pdo, $context);
+    }
+
+    iam_render_registration_view($pdo, $inviteToken);
+    exit;
+}
 
 if ($route !== '') {
     $profile = identitycore_public_profile_by_username($pdo, $route);
