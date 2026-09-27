@@ -1,5 +1,9 @@
 DirectoryIndex index.php
 
+<FilesMatch "\.(sql|md|example)$">
+    Require all denied
+</FilesMatch>
+
 RewriteEngine On
 
 RewriteCond %{REQUEST_FILENAME} -f [OR]
