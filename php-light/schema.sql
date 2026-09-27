@@ -129,7 +129,7 @@ CREATE TABLE IF NOT EXISTS IAM_invites (
     target_email         VARCHAR(320) NOT NULL,
     token_hash           CHAR(64) NOT NULL,
     created_at           DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    expires_at           DATETIME(6) NULL,
+    expires_at           DATETIME(6) NOT NULL,
     status               VARCHAR(32) NOT NULL DEFAULT 'active',
     claimed_by_user_id   VARCHAR(128) NULL,
     claimed_at           DATETIME(6) NULL,
