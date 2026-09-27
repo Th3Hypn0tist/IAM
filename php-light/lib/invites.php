@@ -206,3 +206,18 @@ function iam_accept_invite_for_existing_user(
         throw $e;
     }
 }
+
+
+function iam_mark_invite_delivery_failed(
+    PDO $pdo,
+    string $inviteId
+): void {
+    $stmt = $pdo->prepare(
+        "UPDATE IAM_invites
+         SET status = 'delivery_failed'
+         WHERE invite_id = ?
+           AND status = 'active'
+           AND claimed_by_user_id IS NULL"
+    );
+    $stmt->execute([$inviteId]);
+}
