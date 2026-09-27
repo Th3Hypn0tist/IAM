@@ -15,8 +15,9 @@ return [
 
     'session_ttl_seconds' => 2592000,
     'cookie_name' => 'iam_light',
-    'cookie_path' => '/iam',
+    'cookie_path' => '/',
     'cookie_secure' => true,
     'abuse_hmac_secret' => 'CHANGE_ME_TO_A_RANDOM_SECRET_OF_AT_LEAST_32_BYTES',
     'invalid_invite_block_seconds' => 3600,
+    'public_base_url' => 'https://aigm.fi/iam',
 ];
