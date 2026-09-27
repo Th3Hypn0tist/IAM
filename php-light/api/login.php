@@ -12,11 +12,14 @@ try {
     $body = iam_json_body();
     $username = trim((string)($body['username'] ?? ''));
     $password = (string)($body['password'] ?? '');
+    $domainId = trim((string)($body['domain'] ?? ''));
 
     if ($username === '' || $password === '') iam_fail(400, 'username and password are required');
+    if ($domainId === '') iam_fail(400, 'domain is required');
     if (strlen($username) > 32 || strlen($password) > 1024) iam_fail(400, 'invalid credentials');
 
     $pdo = iam_pdo();
+    $domainId = iam_require_domain($pdo, $domainId);
     $ipHash = iam_abuse_ip_hash();
     $identifierHash = iam_abuse_identifier_hash($username);
     iam_abuse_require_not_blocked($pdo, $ipHash);
@@ -32,7 +35,7 @@ try {
 
     $stmt = $pdo->prepare(
         "SELECT
-            u.user_id, u.username, u.tier, u.status, u.verified,
+            u.user_id, u.username, u.status, u.verified,
             a.password_hash, a.account_status
          FROM IAM_users u
          JOIN IAM_user_accounts a ON a.user_id = u.user_id
@@ -64,6 +67,7 @@ try {
     }
 
     iam_abuse_log($pdo, $ipHash, $identifierHash, 'login', 'accepted');
+    $row = iam_with_domain_claim($pdo, $row, $domainId);
     $session = iam_issue_session($pdo, (string)$row['user_id']);
     echo json_encode([...iam_base_payload($row), ...$session], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
