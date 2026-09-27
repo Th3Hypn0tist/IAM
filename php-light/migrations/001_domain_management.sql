@@ -129,10 +129,12 @@ CREATE TABLE IF NOT EXISTS IAM_registration_forms (
 DROP TABLE IF EXISTS IAM_user_tier_history;
 DROP TABLE IF EXISTS IAM_tier_progression_requests;
 
-ALTER TABLE IAM_users
-    DROP CONSTRAINT chk_IAM_users_tier;
-
-ALTER TABLE IAM_users
-    DROP COLUMN tier;
+-- IAM_users.tier is intentionally retained as an unused legacy column in
+-- upgraded databases. The new application code does not read it. Keeping the
+-- column makes this migration portable across MariaDB/MySQL CHECK-constraint
+-- implementations. Fresh installs from schema.sql do not contain the column.
+--
+-- A later cleanup migration may drop it once the deployed database engine is
+-- explicitly pinned.
 
 COMMIT;
