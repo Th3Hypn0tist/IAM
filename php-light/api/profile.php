@@ -13,9 +13,18 @@ try {
     $userId = (string)$row['user_id'];
 
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $emailStmt = $pdo->prepare(
+            "SELECT email
+             FROM IAM_user_accounts
+             WHERE user_id = ?
+             LIMIT 1"
+        );
+        $emailStmt->execute([$userId]);
+
         echo json_encode(
             [
                 'ok' => true,
+                'email' => (string)$emailStmt->fetchColumn(),
                 'profile' => identitycore_profile($pdo, $userId),
             ],
             JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
