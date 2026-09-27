@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/domain_management.php';
+
 const IAM_CONTRACT = 'iam.light';
 const IAM_VERSION = '1.0';
 
@@ -182,7 +184,7 @@ function iam_session_row(PDO $pdo, string $token): ?array {
     $stmt = $pdo->prepare(
         "SELECT
             s.session_id, s.user_id, s.expires_at,
-            u.username, u.tier, u.status, u.verified,
+            u.username, u.status, u.verified,
             a.account_status
          FROM IAM_sessions s
          JOIN IAM_users u ON u.user_id = s.user_id
@@ -200,6 +202,23 @@ function iam_session_row(PDO $pdo, string $token): ?array {
     $touch = $pdo->prepare('UPDATE IAM_sessions SET last_seen_at = CURRENT_TIMESTAMP(6) WHERE session_id = ?');
     $touch->execute([(string)$row['session_id']]);
     return $row;
+}
+
+function iam_with_domain_claim(PDO $pdo, array $row, string $domainId): array {
+    $effective = iam_effective_management_tier(
+        $pdo,
+        (string)$row['user_id'],
+        $domainId
+    );
+    $row['tier'] = (int)$effective['tier'];
+    $row['domain_id'] = (string)$effective['target_domain_id'];
+    return $row;
+}
+
+function iam_request_domain_from_query(PDO $pdo): string {
+    $domainId = trim((string)($_GET['domain'] ?? ''));
+    if ($domainId === '') iam_fail(400, 'domain is required');
+    return iam_require_domain($pdo, $domainId);
 }
 
 function iam_require_session(PDO $pdo): array {
