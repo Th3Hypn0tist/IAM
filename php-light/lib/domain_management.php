@@ -89,6 +89,40 @@ function iam_require_domain(PDO $pdo, string $domainId): string {
     return $domainId;
 }
 
+function iam_has_domain_membership(
+    PDO $pdo,
+    string $userId,
+    string $domainId
+): bool {
+    $domainId = iam_require_domain($pdo, $domainId);
+
+    $stmt = $pdo->prepare(
+        "SELECT 1
+         FROM IAM_domain_memberships
+         WHERE user_id = ?
+           AND domain_id = ?
+           AND status = 'active'
+         LIMIT 1"
+    );
+    $stmt->execute([$userId, $domainId]);
+
+    return $stmt->fetchColumn() !== false;
+}
+
+function iam_require_domain_membership(
+    PDO $pdo,
+    string $userId,
+    string $domainId
+): string {
+    $domainId = iam_require_domain($pdo, $domainId);
+
+    if (!iam_has_domain_membership($pdo, $userId, $domainId)) {
+        iam_fail(403, 'Access denied.');
+    }
+
+    return $domainId;
+}
+
 /*
  * Resolve user-management authority for one target domain.
  *
