@@ -1,104 +1,245 @@
 # IAM php-light
 
-Dependency-free PHP implementation of `iam.light 1.0`.
+Dependency-free PHP implementation of `iam.light 1.1`.
 
-## Deploy
-
-Copy the contents of this directory to the web root serving the IAM path, for example:
+## Canonical deployment
 
 ```text
 https://aigm.fi/iam
 ```
 
-Then:
+IAM is now designed around a fresh canonical database. Before the first public
+release, `schema.sql` is the source of truth and no migration compatibility
+layer is maintained.
 
-1. Copy `config.example.php` to `config.php`.
-2. Configure either `db_config` or the standalone `dsn` / `user` / `password` fields.
-3. Set `abuse_hmac_secret` to a random secret of at least 32 bytes.
-4. Import `schema.sql` into the IAM database.
-5. Use HTTPS.
-6. Ensure PHP has PDO and PDO_MYSQL.
+## Core boundaries
 
-### Shared LMTS database config
+IAM owns:
 
-php-light can consume the existing LMTS PHP database config instead of duplicating database credentials. The external file must return at least `dsn`, `user` and `password`.
+- authentication;
+- username and canonical email;
+- sessions;
+- invites and invite provenance;
+- domain membership;
+- domain hierarchy;
+- domain-scoped user-management tiers.
 
-For the `aigm.fi/iam` deployment, IAM lives below the public web root while the existing LMTS config is two directory levels above IAM:
+IdentityCore owns profile metadata and field visibility.
+
+AccessCore owns application permissions.
+
+IAM management tiers MUST NOT be used as application authorization.
+
+## Domain management tiers
+
+Privilege order:
+
+```text
+1337 > 1 > 2 > 3
+```
+
+Semantics:
+
+- `3`: normal user, no delegated user-management authority;
+- `2`: may invite users into the domain;
+- `1`: may invite and manage users in the domain;
+- `1337`: AAA user management for the domain and descendants.
+
+Inheritance travels down the domain tree only.
+
+A stronger inherited tier always overrides a weaker local tier.
+
+Tier `1337` is readable by the runtime but is not assignable through normal
+application code. During the current bootstrap phase it can only be inserted
+directly in the database.
+
+## Seed domains
+
+`schema.sql` currently creates:
+
+```text
+iam
+└── lmts
+```
+
+IAM is the root/master domain.
+
+## Authentication
+
+Login uses username + password.
+
+Email is not a login identifier.
+
+Password policy:
+
+- minimum 15 characters;
+- maximum 1024 characters;
+- no uppercase/lowercase/number/special-character composition rules;
+- long passphrases are recommended;
+- four unrelated words is the recommended starting model.
+
+The IAM session cookie is site-wide on `aigm.fi` by default:
 
 ```php
-'db_config' => __DIR__ . '/../../config.php',
+'cookie_path' => '/',
 ```
 
-The referenced LMTS config remains outside the public IAM directory. IAM-specific values such as session settings and `abuse_hmac_secret` stay in IAM's own `config.php`.
+It remains Secure + HttpOnly + SameSite=Strict.
 
-When `db_config` is set, its `dsn`, `user` and `password` values override the corresponding standalone example values.
+## Domain context
 
-No Composer packages are required.
+Domain context is mandatory for domain-aware IAM identity responses.
 
-Generate an abuse-control HMAC secret locally:
+Login:
 
-```sh
-php -r 'echo bin2hex(random_bytes(32)), PHP_EOL;'
+```http
+POST /iam/api/login.php
+Content-Type: application/json
+
+{
+  "username": "TheHypnotist",
+  "password": "...",
+  "domain": "lmts"
+}
 ```
 
-Do not reuse a password, invite code, bearer token or database credential as the HMAC secret.
-
-## Endpoints
+Session restore:
 
 ```text
-POST /api/login.php
-POST /api/register.php
-GET  /api/me.php
-POST /api/logout.php
-GET  /register/
+GET /iam/api/me.php?domain=lmts
 ```
 
-The browser registration page is therefore available at:
+The response shape remains compatible:
+
+```json
+{
+  "user": {
+    "id": "usr_...",
+    "username": "TheHypnotist",
+    "status": "active",
+    "verified": true
+  },
+  "claims": {
+    "tier": 2
+  }
+}
+```
+
+The returned `claims.tier` is the effective IAM user-management tier for the
+requested domain. Clients must not calculate inheritance themselves.
+
+## Registration
+
+Registration is invitation-only.
+
+Canonical browser entry:
 
 ```text
-https://aigm.fi/iam/register/
+/iam/register?token=<opaque-invite-token>
 ```
 
-## Registration abuse guard
+The path word `register` has no special meaning without a token. Therefore:
 
-Registration remains invite-only. php-light additionally applies:
+```text
+/iam/register
+```
 
-- 5 registration attempts per IP hash / 10 minutes;
-- 20 registration attempts per IP hash / 24 hours;
-- 5 registration attempts per invite hash / 30 minutes;
-- HTTP 429 with `Retry-After` when a limit is exceeded;
-- a browser-only honeypot field;
-- a browser-only 2 second minimum form time;
-- 3-32 character ASCII usernames containing only letters, digits, `_`, `-` or `.`;
-- a reserved username list;
-- optional normalized and validated email;
-- password length 8-1024, and password must differ from username and email;
-- 7 day registration-attempt retention.
+is processed through the same public username lookup path as any other
+`/iam/<username>` request.
 
-The attempt table stores only an HMAC-SHA-256 IP hash, SHA-256 invite hash, timestamp and outcome. Raw invite codes and IP addresses are not written to that table.
+Invitation rules:
 
-`REMOTE_ADDR` is the registration rate-limit source. If the deployment is behind a reverse proxy, configure the web server/proxy so PHP receives the intended client address in `REMOTE_ADDR`; php-light deliberately does not trust arbitrary forwarded-IP headers.
+- inviter is stored permanently;
+- target domain is stored;
+- destination email is stored;
+- token is random and stored only as SHA-256;
+- token is one-time;
+- invite TTL is 7 days;
+- initial email is verified through possession of the email-bound invitation.
 
-For every unusable invite state, the only public invite-validity response is exactly:
+Registration form state:
+
+- generated server-side;
+- TTL 12 hours;
+- minimum age 2 seconds;
+- expiry does not consume the invite;
+- user can reopen the invitation while the invite remains valid.
+
+Anti-abuse:
+
+- honeypot;
+- HMAC-hashed IP tracking;
+- invite-hash tracking;
+- rate limiting;
+- three invalid invite-token attempts from one IP trigger an IP block;
+- no CAPTCHA;
+- no browser fingerprinting.
+
+Every unusable invitation state returns:
 
 ```text
 Invite code not valid.
 ```
 
-## Existing Origin
+## IAM web surface
 
-An existing `IAM_users.user_id = '0'` identity is retained.
+`/iam`
 
-The account password hash must be a PHP `password_hash()` value because php-light deliberately does not carry legacy credential verifiers. If the account was created with another hash format, replace only `IAM_user_accounts.password_hash`; the canonical Origin identity itself does not change.
+- no session: reusable system-wide IAM Login View;
+- valid session: IdentityCore self-service profile editor.
 
-Generate a compatible hash with PHP:
+`/iam/<username>`
 
-```sh
-php -r '$p=getenv("IAM_PASSWORD"); echo password_hash($p, defined("PASSWORD_ARGON2ID") ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT), PHP_EOL;'
+- exact username lookup;
+- existing user: public IdentityCore projection;
+- missing user: `User not found`.
+
+There is no reserved-word runtime branch. Reserved usernames are rejected only
+when a username is created.
+
+## IdentityCore
+
+Current canonical profile fields:
+
+- display_name
+- organization
+- phone
+- country
+- timezone
+- language
+- website
+
+Each field has independent `private` or `public` visibility.
+
+The `/iam` self-service editor changes only IdentityCore profile information.
+
+## Deploy
+
+1. Copy `config.example.php` to `config.php`.
+2. Configure database credentials.
+3. Configure `abuse_hmac_secret` with at least 32 random bytes.
+4. Create a fresh database from `schema.sql`.
+5. Seed/bootstrap the required initial IAM user directly in the database.
+6. Assign bootstrap management tiers directly in the database where required.
+7. Use HTTPS.
+8. Ensure PHP has PDO and PDO_MYSQL.
+9. Ensure Apache rewrite support is enabled for `php-light/.htaccess`.
+
+No Composer packages are required.
+
+## LMTS
+
+LMTS is a client of IAM, not an IAM implementation.
+
+LMTS must use canonical domain context:
+
+```text
+lmts
 ```
 
-Set `IAM_PASSWORD` only for that command and clear it afterwards, or use another non-logging local mechanism to generate the hash.
+LMTS registration is removed. New identities are created through the IAM web
+registration flow.
 
-## Database ownership
+LMTS does not interpret IAM tiers as LMTS application permissions.
 
-php-light owns authentication state. Application consumers such as LMTS must not verify passwords against their local application database. They consume IAM sessions through the HTTP contract.
+Static report-publish authentication remains a separate later change.
