@@ -252,3 +252,21 @@ CREATE TABLE IF NOT EXISTS IAM_ip_blocks (
     PRIMARY KEY (ip_hash),
     KEY idx_IAM_ip_blocks_expiry (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS IAM_ip_block_audit (
+    audit_id       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    actor_user_id  VARCHAR(128) NOT NULL,
+    ip_hash        CHAR(64) NOT NULL,
+    action         VARCHAR(32) NOT NULL,
+    reason         VARCHAR(128) NULL,
+    created_at     DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (audit_id),
+    KEY idx_IAM_ip_block_audit_actor (actor_user_id, created_at),
+    KEY idx_IAM_ip_block_audit_hash (ip_hash, created_at),
+    CONSTRAINT fk_IAM_ip_block_audit_actor
+        FOREIGN KEY (actor_user_id) REFERENCES IAM_users(user_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT chk_IAM_ip_block_audit_action
+        CHECK (action IN ('block','unblock'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
