@@ -75,7 +75,7 @@ function iam_send_invite_email(array $invite): void {
 
     iam_send_mail(
         $email,
-        'AIGM IAM invitation',
+        'AIGM IAM invite',
         "You have been invited to AIGM IAM!\n\n" .
         $url . "\n"
     );
