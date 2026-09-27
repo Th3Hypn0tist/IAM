@@ -101,16 +101,77 @@ if ($session === null) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IAM Login</title>
+<title>AIGM IAM</title>
 <style>
-body{font-family:system-ui,sans-serif;max-width:34rem;margin:4rem auto;padding:0 1rem;background:#111;color:#eee}
-form{display:grid;gap:1rem}label{display:grid;gap:.35rem}input,button{font:inherit;padding:.7rem}
-button{cursor:pointer}.iam-login-status{min-height:1.5rem}
+html,body{min-height:100%}
+body{
+  margin:0;
+  background:#030202;
+  color:#fff;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+main{
+  width:min(92vw,420px);
+  margin:0 auto;
+  padding:5vh 0 8vh;
+  text-align:center;
+}
+.logo{
+  display:block;
+  max-width:min(70vw,420px);
+  height:auto;
+  margin:0 auto;
+}
+.iam-title{
+  margin:0;
+  font-size:clamp(3.5rem,10vw,5rem);
+  font-weight:600;
+  letter-spacing:.08em;
+  color:#fff;
+  position:relative;
+  top:-.65em;
+}
+.login-shell{
+  margin-top:-2.2rem;
+  text-align:left;
+}
+.iam-login-form{display:grid;gap:1rem}
+.iam-login-form label{display:grid;gap:.4rem;font-size:.9rem;color:#bbb}
+.iam-login-form input{
+  box-sizing:border-box;
+  width:100%;
+  padding:.8rem .9rem;
+  border:1px solid #333;
+  border-radius:.35rem;
+  background:#111;
+  color:#fff;
+  font:inherit;
+}
+.iam-login-form input:focus{
+  outline:1px solid #fff;
+  outline-offset:1px;
+}
+.iam-login-form button{
+  padding:.8rem .9rem;
+  border:1px solid #444;
+  border-radius:.35rem;
+  background:#fff;
+  color:#030202;
+  font:inherit;
+  font-weight:600;
+  cursor:pointer;
+}
+.iam-login-status{min-height:1.4rem;color:#bbb;text-align:center}
 </style>
 </head>
 <body>
-<h1>Login</h1>
-<?php iam_render_login_view(IAM_ROOT_DOMAIN); ?>
+<main>
+  <img class="logo" src="/images/AIGM-LOGO.png" alt="AIGM">
+  <h1 class="iam-title">IAM</h1>
+  <div class="login-shell">
+    <?php iam_render_login_view(IAM_ROOT_DOMAIN); ?>
+  </div>
+</main>
 </body>
 </html>
 <?php
