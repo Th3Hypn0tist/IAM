@@ -125,3 +125,44 @@ function iam_abuse_block(
     $stmt->execute([$ipHash, $reason, $source, $expiresAt]);
     iam_abuse_log($pdo, $ipHash, null, $source, 'blocked');
 }
+
+
+function iam_abuse_count_outcome(
+    PDO $pdo,
+    string $action,
+    string $outcome,
+    string $column,
+    string $hash,
+    int $windowSeconds
+): int {
+    if (!in_array($column, ['ip_hash', 'identifier_hash'], true)) {
+        throw new InvalidArgumentException('invalid abuse counter column');
+    }
+    if ($windowSeconds < 1) {
+        throw new InvalidArgumentException('invalid abuse counter window');
+    }
+
+    $sql = sprintf(
+        "SELECT COUNT(*)
+         FROM IAM_abuse_events
+         WHERE action = ?
+           AND outcome = ?
+           AND %s = ?
+           AND created_at >= TIMESTAMPADD(
+               SECOND,
+               -?,
+               CURRENT_TIMESTAMP(6)
+           )",
+        $column
+    );
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([
+        $action,
+        $outcome,
+        $hash,
+        $windowSeconds,
+    ]);
+
+    return (int)$stmt->fetchColumn();
+}
