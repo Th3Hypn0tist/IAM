@@ -89,11 +89,25 @@ function identitycore_normalize_field(string $field, mixed $value): ?string {
         throw new InvalidArgumentException('IdentityCore field is too long');
     }
 
-    if (
-        $field === 'website'
-        && filter_var($value, FILTER_VALIDATE_URL) === false
-    ) {
-        throw new InvalidArgumentException('website is not valid');
+    if ($field === 'website') {
+        if (!preg_match('~^[a-z][a-z0-9+.-]*://~i', $value)) {
+            $value = 'https://' . $value;
+        }
+
+        $validated = filter_var($value, FILTER_VALIDATE_URL);
+        $parts = $validated === false ? false : parse_url($validated);
+
+        if (
+            $validated === false
+            || !is_array($parts)
+            || !isset($parts['scheme'], $parts['host'])
+            || !in_array(strtolower((string)$parts['scheme']), ['http', 'https'], true)
+            || (string)$parts['host'] === ''
+        ) {
+            throw new InvalidArgumentException('website is not valid');
+        }
+
+        $value = $validated;
     }
 
     return $value;
