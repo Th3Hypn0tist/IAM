@@ -1,0 +1,12 @@
+{
+  "domain": "iam",
+  "role": "identity authority",
+  "targetDomainRoot": "/app/iam/",
+  "targetPublicProjection": "/iam/",
+  "rules": [
+    "IAM owns identity and authentication behavior",
+    "IAM does not own authorization decisions for domain actions/resources",
+    "AccessCore is the authorization decision authority",
+    "the existing IAM implementation remains untouched until the parallel /app/iam candidate is proven"
+  ]
+}
