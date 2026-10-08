@@ -1,29 +1,64 @@
 # IAM
 
-Portable Identity and Access Management contracts and implementations for the AIGM ecosystem.
+Identity and authentication authority for the AIGM ecosystem.
 
-IAM defines authentication semantics independently from any one runtime. Implementations live under runtime-specific directories and must satisfy the contracts under `contract/`.
+## Canonical responsibility split
+
+```text
+IAM        = who
+AccessCore = authority / may
+DWH        = where / what relates to what
+WebEngine  = execute the declared web structure
+WebGUI     = generic UI primitives
+S3D        = spatial / 3D primitives
+```
+
+IAM answers one canonical question:
+
+```text
+Who is this subject?
+```
+
+IAM owns identity, authentication and session semantics. It does not decide whether an authenticated subject may perform an application action.
+
+## Boundary
+
+```text
+IAM
+ ↓ identity context
+WebEngine / services
+ ↓ subject
+AccessCore
+ ↓ allow | deny
+protected operation
+```
+
+IAM does not own:
+
+- application authorization policy;
+- DWH structural/resource resolution;
+- website composition;
+- UI primitives;
+- spatial/3D primitives;
+- domain business behavior.
+
+`managementTier` and other IAM administrative claims remain IAM user-management metadata. They must not be translated by WebEngine or another consumer into application permissions.
 
 ## Implementations
 
-- `php-light/` — dependency-free PHP implementation of IAM **light** authentication.
-
-## Light authentication
+- `php-light/` — dependency-free PHP implementation of IAM light authentication.
 
 IAM light proves a username/password identity and issues a revocable opaque session token.
 
-It does **not** decide where application data is stored or published. For example, an LMTS user may authenticate through IAM while still using any LMTS report target combination (Local, Public, or both).
+It does not decide where application data is stored or published. DWH owns structural/resource resolution and AccessCore owns authorization.
 
-Current reference deployment:
+## Canonical deployment direction
 
 ```text
-https://aigm.fi/iam
+/app/iam/   implementation/domain root
+/iam/       public projection
 ```
 
-LMTS is the first reference client.
+The existing deployment may remain in place during migration until the parallel `/app/iam/` candidate is proven.
 
-
-## Deployment
-
-The current php-light deployment procedure is documented in
-[`DEPLOY.md`](DEPLOY.md).
+See `Contracts/` for machine-readable boundaries and `DEPLOY.md` for the current deployment procedure.
