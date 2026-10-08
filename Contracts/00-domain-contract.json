@@ -1,12 +1,25 @@
 {
   "domain": "iam",
-  "role": "identity authority",
+  "role": "identity and authentication authority",
   "targetDomainRoot": "/app/iam/",
   "targetPublicProjection": "/iam/",
   "rules": [
-    "IAM owns identity and authentication behavior",
+    "IAM owns subject identity, authentication and session semantics",
     "IAM does not own authorization decisions for domain actions/resources",
     "AccessCore is the authorization decision authority",
+    "DWH owns canonical website structural/resource resolution and declarative relations",
+    "WebEngine consumes IAM identity context but must not reinterpret IAM management tiers as application authorization",
+    "WebGUI and S3D do not depend on IAM identity semantics",
     "the existing IAM implementation remains untouched until the parallel /app/iam candidate is proven"
-  ]
+  ],
+  "version": "0.2.0",
+  "responsibility": "who",
+  "systemSplit": {
+    "IAM": "who",
+    "AccessCore": "authority / may",
+    "DWH": "where / what relates to what",
+    "WebEngine": "execute declared web structure",
+    "WebGUI": "generic UI primitives",
+    "S3D": "spatial / 3D primitives"
+  }
 }
